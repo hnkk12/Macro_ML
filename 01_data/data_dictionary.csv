@@ -1,0 +1,36 @@
+Variable,Source,Transformation,Frequency,Description
+target_3m,FRED (USREC),Max of USREC from t+1 to t+3,Monthly,Recession indicator within next 3 months
+target_6m,FRED (USREC),Max of USREC from t+1 to t+6,Monthly,Recession indicator within next 6 months
+target_12m,FRED (USREC),Max of USREC from t+1 to t+12,Monthly,Recession indicator within next 12 months
+T10Y3M_level,FRED (T10Y3M),Level,Monthly,10-Year minus 3-Month Treasury spread
+T10Y2Y_level,FRED (T10Y2Y),Level,Monthly,10-Year minus 2-Year Treasury spread
+UNRATE_level,FRED (UNRATE),Level,Monthly,Civilian Unemployment Rate
+UNRATE_diff3,FRED (UNRATE),3-month difference,Monthly,Unemployment rate 3-month change
+UNRATE_diff12,FRED (UNRATE),12-month difference,Monthly,Unemployment rate 12-month change
+Sahm_Indicator,FRED (UNRATE),3m moving average minus 12m minimum,Monthly,Sahm Rule recession indicator
+CPI_YoY,FRED (CPIAUCSL),12-month log difference,Monthly,Year-over-Year Consumer Price Index inflation
+CPI_MoM,FRED (CPIAUCSL),1-month log difference,Monthly,Month-over-Month Consumer Price Index inflation
+INDPRO_YoY,FRED (INDPRO),12-month log difference,Monthly,Year-over-Year Industrial Production Index growth
+INDPRO_MoM,FRED (INDPRO),1-month log difference,Monthly,Month-over-Month Industrial Production Index growth
+FEDFUNDS_level,FRED (FEDFUNDS),Level,Monthly,Effective Federal Funds Rate
+FEDFUNDS_diff1,FRED (FEDFUNDS),1-month difference,Monthly,Federal Funds Rate 1-month change
+FEDFUNDS_diff12,FRED (FEDFUNDS),12-month difference,Monthly,Federal Funds Rate 12-month change
+Credit_Spread_level,"FRED (BAA, GS10)",BAA minus GS10,Monthly,Moody's Baa corporate bond yield relative to 10Y Treasury
+SP500_Return_1m,Yahoo Finance (^GSPC),1-month log difference,Monthly,S&P 500 1-month return
+SP500_Return_3m,Yahoo Finance (^GSPC),3-month log difference,Monthly,S&P 500 3-month return
+SP500_Return_12m,Yahoo Finance (^GSPC),12-month log difference,Monthly,S&P 500 Year-over-Year return
+SP500_Drawdown,Yahoo Finance (^GSPC),Drawdown from running peak,Monthly,S&P 500 Drawdown percentage
+M2_YoY,FRED (M2SL),12-month log difference,Monthly,Year-over-Year M2 Money Supply growth
+M2_MoM,FRED (M2SL),1-month log difference,Monthly,Month-over-Month M2 Money Supply growth
+T10Y3M_lag1,FRED (T10Y3M),1-month lag,Monthly,10Y-3M Treasury spread 1-month lag
+T10Y2Y_lag1,FRED (T10Y2Y),1-month lag,Monthly,10Y-2Y Treasury spread 1-month lag
+Credit_Spread_lag1,"FRED (BAA, GS10)",1-month lag,Monthly,Credit spread 1-month lag
+T10Y3M_lag3,FRED (T10Y3M),3-month lag,Monthly,10Y-3M Treasury spread 3-month lag
+T10Y2Y_lag3,FRED (T10Y2Y),3-month lag,Monthly,10Y-2Y Treasury spread 3-month lag
+Credit_Spread_lag3,"FRED (BAA, GS10)",3-month lag,Monthly,Credit spread 3-month lag
+T10Y3M_lag6,FRED (T10Y3M),6-month lag,Monthly,10Y-3M Treasury spread 6-month lag
+T10Y2Y_lag6,FRED (T10Y2Y),6-month lag,Monthly,10Y-2Y Treasury spread 6-month lag
+Credit_Spread_lag6,"FRED (BAA, GS10)",6-month lag,Monthly,Credit spread 6-month lag
+T10Y3M_lag12,FRED (T10Y3M),12-month lag,Monthly,10Y-3M Treasury spread 12-month lag
+T10Y2Y_lag12,FRED (T10Y2Y),12-month lag,Monthly,10Y-2Y Treasury spread 12-month lag
+Credit_Spread_lag12,"FRED (BAA, GS10)",12-month lag,Monthly,Credit spread 12-month lag
