@@ -1,0 +1,37 @@
+Horizon,Model,Recession,Lead Time (Months),Peak Probability (Lead)
+3M,Probit Baseline,Great Recession,12m,30.4%
+3M,Probit Baseline,COVID Recession,9m,36.8%
+3M,Logistic Regression,Great Recession,3m,66.2%
+3M,Logistic Regression,COVID Recession,Not Detected,4.8%
+3M,Random Forest,Great Recession,4m,43.6%
+3M,Random Forest,COVID Recession,Not Detected,7.5%
+3M,XGBoost,Great Recession,3m,61.8%
+3M,XGBoost,COVID Recession,Not Detected,7.7%
+3M,LightGBM,Great Recession,5m,77.5%
+3M,LightGBM,COVID Recession,Not Detected,6.5%
+3M,Stacked Ensemble,Great Recession,1m,57.3%
+3M,Stacked Ensemble,COVID Recession,Not Detected,4.3%
+6M,Probit Baseline,Great Recession,12m,53.6%
+6M,Probit Baseline,COVID Recession,12m,56.4%
+6M,Logistic Regression,Great Recession,6m,82.9%
+6M,Logistic Regression,COVID Recession,Not Detected,22.2%
+6M,Random Forest,Great Recession,12m,49.0%
+6M,Random Forest,COVID Recession,Not Detected,14.9%
+6M,XGBoost,Great Recession,12m,82.8%
+6M,XGBoost,COVID Recession,Not Detected,17.0%
+6M,LightGBM,Great Recession,12m,89.3%
+6M,LightGBM,COVID Recession,9m,33.3%
+6M,Stacked Ensemble,Great Recession,5m,71.7%
+6M,Stacked Ensemble,COVID Recession,Not Detected,11.9%
+12M,Probit Baseline,Great Recession,12m,79.0%
+12M,Probit Baseline,COVID Recession,12m,83.4%
+12M,Logistic Regression,Great Recession,11m,92.6%
+12M,Logistic Regression,COVID Recession,11m,67.6%
+12M,Random Forest,Great Recession,12m,73.2%
+12M,Random Forest,COVID Recession,7m,51.9%
+12M,XGBoost,Great Recession,12m,82.9%
+12M,XGBoost,COVID Recession,11m,31.6%
+12M,LightGBM,Great Recession,12m,81.1%
+12M,LightGBM,COVID Recession,7m,69.7%
+12M,Stacked Ensemble,Great Recession,9m,60.7%
+12M,Stacked Ensemble,COVID Recession,9m,62.1%

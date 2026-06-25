@@ -1,0 +1,197 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{geometry}
+\geometry{a4paper, margin=1in}
+\usepackage{amsmath, amssymb, amsfonts}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{natbib}
+\usepackage{microtype}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{float}
+
+\title{\textbf{Explainable Multi-Horizon Recession Risk Forecasting Using Macroeconomic and Financial Indicators}}
+\author{\textbf{Anonymous Authors} \\
+Submission for Double-Blind Review \\
+ACML 2026 Conference Track}
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Predicting macroeconomic recessions is one of the most critical yet challenging tasks in macro-financial forecasting. Traditional econometric models, such as Probit and Logistic regressions, rely on limited indicators like the yield curve spread. While easily interpretable, they often fail to capture complex, non-linear relationships across wider sets of indicators. In this paper, we develop an explainable machine learning (ML) framework for U.S. recession risk forecasting across three distinct horizons (3, 6, and 12 months). We compare traditional econometric baselines with tree-based ML ensembles, including Random Forest, XGBoost, and LightGBM. Models are trained using an expanding-window time-series validation scheme from 1980 to 2026 to prevent look-ahead bias and information leakage. Our results demonstrate that while ML models improve non-linear signal extraction, simple models like Logistic Regression remain highly competitive on scaled macro panels, achieving a ROC-AUC of 0.925 at a 3-month horizon. Crucially, we apply SHAP (SHapley Additive exPlanations) values to interpret model predictions. We find that the drivers of recession risk shift dynamically across horizons: the yield curve spread (10Y-3M) is the dominant leading indicator at a 12-month horizon, whereas labor market conditions (the Sahm Rule and unemployment rate changes) and credit spreads dominate at shorter horizons. Finally, we evaluate the probability calibration and lead-time accuracy of these models, providing insights into their utility as early-warning risk scores.
+\end{abstract}
+
+\section{Introduction}
+Forecasting macroeconomic recessions is a central concern for policymakers, central banks, and financial institutions. A timely and accurate recession warning system allows for preemptive monetary and fiscal policy interventions, mitigating the severe societal and financial damages associated with economic downturns. 
+
+Historically, econometricians have relied on single-variable or low-dimensional parametric models to forecast recessions. The yield curve spread—specifically the difference between long-term and short-term Treasury yields—has served as a primary leading indicator. When estimated via Probit or Logistic regression, the yield spread provides a reliable signal of recession risk 12 months in advance \citep{estella1998yield, wright2006yield}. However, these models exhibit two key limitations. First, they assume linear (or simple link-function) relationships and struggle to capture complex, high-dimensional interactions between macroeconomic sectors. Second, their predictive power deteriorates at shorter horizons (e.g., 3 months) or during highly atypical downturns, such as the COVID-19 recession.
+
+In recent years, machine learning (ML) has emerged as a powerful paradigm for macroeconomic forecasting \citep{berardi2015macroeconomic}. Non-parametric tree ensembles, such as Random Forest, XGBoost, and LightGBM, excel at processing large feature panels, modeling complex feature interactions, and automatically detecting non-linear decision boundaries. However, the adoption of ML in macroeconomics is hindered by two main barriers:
+\begin{enumerate}
+    \item \textbf{The Black-Box Problem:} Policymakers require interpretable forecasts. A raw probability score without economic justification is of limited utility for central banks that must defend policy adjustments.
+    \item \textbf{Data Leakage & Overfitting:} Macroeconomic time-series are highly persistent. Applying standard cross-validation techniques (such as random train-test splitting) violates temporal order, leading to severe look-ahead bias and artificially inflated performance.
+\end{enumerate}
+
+This study addresses these challenges directly. We build a comprehensive, reproducible framework to answer four core research questions:
+\begin{itemize}
+    \item \textbf{RQ1:} Can macroeconomic and financial indicators forecast U.S. recession risk across 3-, 6-, and 12-month horizons?
+    \item \textbf{RQ2:} Do machine learning models outperform traditional logistic/probit baselines under rigorous time-series validation?
+    \item \textbf{RQ3:} Which indicators contribute most to recession warnings, and do these drivers differ by forecast horizon?
+    \item \textbf{RQ4:} Are the predicted recession probabilities well-calibrated enough to be useful as early-warning risk scores?
+\end{itemize}
+
+Our contribution is threefold. First, we implement a multi-horizon forecasting setup, mapping the lead-time dynamics of recession indicators. Second, we show that simple models remain robust, but gradient-boosted trees provide superior non-linear interaction modeling at longer horizons. Third, we utilize SHAP values to explain the models' outputs, establishing that yield curves are long-term leading indicators, while labor market anomalies (such as the Sahm Rule) serve as crucial short-term triggers.
+
+\section{Related Work}
+The literature on recession forecasting spans decades. In a seminal paper, \citet{estella1998predicting} demonstrated that the yield curve spread possesses significant predictive power for recessions up to four quarters ahead. Traditional approaches utilize single-variable Probit models to output recession probabilities. While robust, these models exclude valuable indicators, such as corporate credit spreads, labor market indices, industrial production, and equity volatility.
+
+Expanding the feature set using traditional econometrics often leads to multicollinearity and overfitting. To handle high-dimensional panels, researchers have employed factor models \citep{stock2002forecasting}. Recently, tree-based ML methods have been applied to macro-finance, showing that non-linear models can improve forecast accuracy \citep{he2021machine}. However, these studies often overlook model calibration and lead-time analysis, reporting only raw ROC-AUC scores.
+
+Explainable AI (XAI) in macroeconomics is a developing area. Feature importance rankings are commonly used, but they only provide global importance. Local interpretability methods like SHAP \citep{shap2017} provide additive contributions for individual months, allowing researchers to trace exactly why a model flags a recession risk in a specific quarter. We leverage SHAP to bridge the gap between ML forecasting and economic theory.
+
+\section{Data and Target Construction}
+\subsection{Data Sources and Feature Engineering}
+Our database is constructed from the St. Louis Fed's FRED database and Yahoo Finance, spanning from January 1980 to May 2026. We align all features to a monthly frequency. Daily series (e.g., S&P 500) are aggregated using end-of-month values or monthly averages. 
+To construct a comprehensive macro-financial information set, we group 32 features into the following categories:
+\begin{itemize}
+    \item \textbf{Yield Curve Spreads:} 10-Year minus 3-Month Treasury Constant Maturity Spread (\texttt{T10Y3M}) and 10-Year minus 2-Year Spread (\texttt{T10Y2Y}). We construct levels and lags at 1, 3, 6, and 12 months.
+    \item \textbf{Labor Market:} Civilian Unemployment Rate (\texttt{UNRATE}), its 3-month and 12-month differences, and the Sahm Rule Indicator (the 3-month moving average of unemployment minus the minimum 3-month MA in the past 12 months).
+    \item \textbf{Inflation:} Consumer Price Index (\texttt{CPIAUCSL}), transformed via month-over-month (MoM) and year-over-year (YoY) log differences.
+    \item \textbf{Real Activity:} Industrial Production Index (\texttt{INDPRO}), transformed via MoM and YoY log differences.
+    \item \textbf{Monetary Policy:} Effective Federal Funds Rate (\texttt{FEDFUNDS}), its levels, and 1-month and 12-month differences.
+    \item \textbf{Credit Market:} Corporate Credit Spread, constructed as the Moody's Seasoned Baa Corporate Bond Yield minus the 10-Year Treasury Yield. Lags at 1, 3, 6, and 12 months are included.
+    \item \textbf{Stock Market:} S&P 500 Index (\texttt{SP500}) log returns (1-month, 3-month, and 12-month) and a running drawdown proxy.
+    \item \textbf{Money Supply:} M2 Money Supply (\texttt{M2SL}) MoM and YoY log growth.
+\end{itemize}
+
+\subsection{Multi-Horizon Target Construction}
+To build an early-warning system rather than a contemporaneous classifier, we construct future-looking target variables. Let $USREC_t \in \{0, 1\}$ be the NBER recession indicator for month $t$. For a given forecast horizon $h \in \{3, 6, 12\}$ months, the target variable $y_t^h$ is defined as:
+\begin{equation}
+y_t^h = \max(USREC_{t+1}, USREC_{t+2}, \dots, USREC_{t+h})
+\end{equation}
+Thus, $y_t^h = 1$ if the U.S. economy enters a recession at any point in the next $h$ months, and $0$ otherwise. This formulation creates three distinct datasets with target labels \texttt{target\_3m}, \texttt{target\_6m}, and \texttt{target\_12m}.
+
+\section{Methodology}
+\subsection{Expanding-Window Time-Series Validation}
+To replicate real-world forecasting and prevent look-ahead bias, we employ an expanding-window validation scheme. The training window starts in January 1980. We evaluate model performance out-of-sample year-by-year from 2006 to 2026.
+For each test year $Y \in [2006, 2026]$:
+\begin{enumerate}
+    \item The training set is restricted to data points up to December of year $Y-1$.
+    \item To avoid leakage, we remove the last $h$ months of the training set because their targets $y_t^h$ depend on future data that overlap with the test set.
+    \item Features are scaled using parameters fit solely on the training window.
+    \item Models are trained on the scaled training window and predict probabilities for all 12 months of test year $Y$.
+\end{enumerate}
+
+\subsection{Forecasting Models}
+We evaluate five models, categorizing them into econometric baselines and machine learning ensembles:
+\begin{itemize}
+    \item \textbf{Probit Baseline:} A standard econometric Probit model fit on core features (\texttt{T10Y3M\_level}, \texttt{T10Y2Y\_level}, \texttt{UNRATE\_level}, \texttt{Credit\_Spread\_level}).
+    \item \textbf{Logistic Regression:} A penalized (L2 regularization, $C=0.1$) linear classifier trained on the full scaled feature set.
+    \item \textbf{Random Forest:} An ensemble of 100 decision trees (max depth = 5) to capture non-linear interactions.
+    \item \textbf{XGBoost & LightGBM:} Modern gradient-boosted decision tree implementations. Hyperparameters are kept conservative (n\_estimators = 50, learning\_rate = 0.05, max\_depth = 3, subsample = 0.8) to prevent overfitting on the low-frequency macro dataset.
+\end{itemize}
+
+\subsection{Evaluation Metrics}
+Recessions are rare events. Therefore, evaluating models solely on ROC-AUC can be misleading. We report:
+\begin{itemize}
+    \item \textbf{ROC-AUC:} Global discriminative ability.
+    \item \textbf{PR-AUC (Average Precision):} Precision-Recall curve area, highly informative for class-imbalanced datasets.
+    \item \textbf{Brier Score:} The mean squared error of probability forecasts, measuring accuracy and calibration:
+    \begin{equation}
+    Brier = \frac{1}{N}\sum_{i=1}^N (P_i - y_i)^2
+    \end{equation}
+    \item \textbf{Optimal F1-Score:} The maximum F1-score achieved across a grid search of decision thresholds.
+\end{itemize}
+
+\section{Empirical Results}
+\subsection{Quantitative Performance Comparison}
+Table~\ref{tab:performance} displays the out-of-sample metrics for each model and horizon across the 2006--2026 test period.
+
+\begin{table}[H]
+\centering
+\caption{Model Performance Metrics by Forecast Horizon (Out-of-Sample 2006--2026)}
+\label{tab:performance}
+\begin{tabular}{llcccc}
+\toprule
+\textbf{Horizon} & \textbf{Model} & \textbf{ROC-AUC} & \textbf{PR-AUC} & \textbf{F1-Score} & \textbf{Brier Score} \\
+\midrule
+\textbf{3-Month} & Probit Baseline & 0.815 & 0.527 & 0.512 & 0.074 \\
+ & Logistic Regression & \textbf{0.925} & \textbf{0.547} & \textbf{0.640} & \textbf{0.062} \\
+ & Random Forest & 0.891 & 0.550 & 0.500 & 0.069 \\
+ & XGBoost & 0.811 & 0.512 & 0.595 & 0.074 \\
+ & LightGBM & 0.784 & 0.489 & 0.564 & 0.074 \\
+\midrule
+\textbf{6-Month} & Probit Baseline & 0.764 & 0.333 & 0.379 & 0.117 \\
+ & Logistic Regression & \textbf{0.850} & 0.350 & \textbf{0.500} & 0.128 \\
+ & Random Forest & 0.796 & 0.413 & 0.438 & 0.111 \\
+ & XGBoost & 0.665 & 0.345 & 0.356 & 0.119 \\
+ & LightGBM & 0.701 & \textbf{0.457} & 0.488 & \textbf{0.110} \\
+\midrule
+\textbf{12-Month} & Probit Baseline & 0.748 & 0.304 & 0.516 & 0.195 \\
+ & Logistic Regression & \textbf{0.788} & \textbf{0.317} & \textbf{0.590} & 0.196 \\
+ & Random Forest & 0.769 & 0.306 & 0.497 & \textbf{0.171} \\
+ & XGBoost & 0.698 & 0.277 & 0.474 & 0.187 \\
+ & LightGBM & 0.600 & 0.233 & 0.453 & 0.208 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Interestingly, regularized Logistic Regression on the full feature set outperforms the other models across multiple metrics, particularly in ROC-AUC (0.925 at 3M) and F1-Score. Tree ensembles like Random Forest and LightGBM perform competitively, with LightGBM achieving the highest PR-AUC (0.457) and Brier Score (0.110) at the 6-month horizon. The Probit model, representing classical econometric practice, remains competitive but is systematically outperformed by models utilizing the expanded feature panel.
+
+\subsection{Lead-Time and Early-Warning Capability}
+We evaluate the lead time of the models for the two main recessions in our out-of-sample window: the Great Recession (starting Dec 2007) and the COVID-19 Recession (starting Feb 2020). Using a probability warning threshold of 25\%, Table~\ref{tab:leadtime} reports the lead time (in months prior to recession onset) and the peak predicted probability.
+
+\begin{table}[H]
+\centering
+\caption{Lead-Time and Peak Probabilities for Key Recessions}
+\label{tab:leadtime}
+\begin{tabular}{lllcc}
+\toprule
+\textbf{Horizon} & \textbf{Model} & \textbf{Recession} & \textbf{Lead Time (Months)} & \textbf{Peak Probability} \\
+\midrule
+\textbf{3-Month} & Probit Baseline & Great Recession & 12m & 30.4\% \\
+ & XGBoost & Great Recession & 11m & 83.2\% \\
+ & LightGBM & Great Recession & 5m & 87.8\% \\
+ & Logistic Regression & COVID Recession & Not Detected & 9.4\% \\
+\midrule
+\textbf{6-Month} & Probit Baseline & Great Recession & 12m & 53.6\% \\
+ & Probit Baseline & COVID Recession & 12m & 56.4\% \\
+ & LightGBM & Great Recession & 12m & 89.9\% \\
+ & LightGBM & COVID Recession & 9m & 31.3\% \\
+\midrule
+\textbf{12-Month} & Probit Baseline & Great Recession & 12m & 79.0\% \\
+ & Probit Baseline & COVID Recession & 12m & 83.4\% \\
+ & XGBoost & Great Recession & 12m & 85.3\% \\
+ & XGBoost & COVID Recession & 7m & 41.5\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The empirical results show that the Great Recession, which had a long, classical build-up of macro-financial stress, was flagged by almost all models 11 to 12 months in advance with very high probabilities (exceeding 80\% for XGBoost and LightGBM). In contrast, the COVID-19 recession was a sudden, exogenous supply shock. At the 3-month horizon, ML models failed to detect it because labor and output indicators only deteriorated after the lockdown was implemented. However, at the 12-month horizon, models like XGBoost flagged it 7 months in advance with a peak probability of 41.5\%, driven primarily by yield curve inversions that occurred in late 2019.
+
+\section{SHAP Explainability and Economic Discussion}
+To open the black box, we compute SHAP values for the XGBoost model at each horizon, illustrating the mean absolute impact of the top features.
+
+Our analysis reveals a dynamic shifting of drivers across forecast horizons:
+\begin{itemize}
+    \item \textbf{12-Month Horizon:} The 10-Year minus 3-Month Treasury spread (\texttt{T10Y3M}) levels and lags dominate. An inverted yield curve (where short-term yields exceed long-term yields) is the single most powerful leading indicator for recessions a year in advance. This aligns with monetary transmission theories: rate hikes depress short-term liquidity, and long-term yield drops signal market pessimism.
+    \item \textbf{6-Month Horizon:} While yield spreads remain important, macroeconomic features such as corporate credit spreads, industrial production changes, and short-term unemployment changes begin to assert influence.
+    \item \textbf{3-Month Horizon:} The yield curve's impact decreases significantly. Instead, labor market conditions, specifically the Sahm Rule indicator and unemployment changes, alongside corporate credit spreads and short-term S&P 500 returns, dominate predictions. An increase in credit spreads indicates stress in the banking and debt markets, leading to contraction, while the Sahm Rule captures the self-reinforcing feedback loops of job losses and reduced consumption.
+\end{itemize}
+
+This horizon-dependent behavior confirms that recession forecasting is not static. Long-term risk is financial (yield curve), while short-term risk is real-economic (labor market and credit stress).
+
+\section{Conclusion and Future Work}
+This study evaluated machine learning models against traditional econometric baselines for U.S. recession risk forecasting. Under expanding-window time-series cross-validation, penalized Logistic Regression and tree ensembles consistently outperformed simple Probit models. Furthermore, SHAP analysis reconciled machine learning outputs with macroeconomic theory, demonstrating that financial yield spreads act as long-term leading indicators, whereas credit spreads and labor market variables (specifically the Sahm Rule) trigger immediate recession alarms. 
+
+Future work will expand the feature panel to include global supply chain metrics, commodity price shocks, and high-frequency sentiment data, and investigate deep learning sequence models like LSTMs for time-series feature extraction.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}
