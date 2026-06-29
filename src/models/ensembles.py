@@ -28,7 +28,7 @@ class HybridProbitMLEnsemble(BaseEstimator, ClassifierMixin):
             "xgboost": get_xgboost(max_depth=2, n_estimators=50, random_state=self.random_state),
             "lightgbm": get_lightgbm(max_depth=2, n_estimators=50, random_state=self.random_state)
         }
-        self.meta_learner = LogisticRegression(C=1.0, fit_intercept=False, random_state=self.random_state)
+        self.meta_learner = LogisticRegression(C=1.0, fit_intercept=True, random_state=self.random_state)
         
     def fit(self, X: pd.DataFrame, y: pd.Series, inner_cv_splits: list = None):
         """Fit Level-0 models and stack using Level-1 meta-learner."""

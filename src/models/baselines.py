@@ -16,6 +16,8 @@ class StatsmodelWrapper:
         
     def fit(self, X: pd.DataFrame, y: pd.Series):
         self.feature_names = list(X.columns)
+        X = X.reset_index(drop=True)
+        y = y.reset_index(drop=True)
         X_const = sm.add_constant(X, has_constant='add')
         
         # Check if X is empty or all constant

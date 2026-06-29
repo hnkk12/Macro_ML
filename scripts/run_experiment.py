@@ -266,8 +266,8 @@ def run_experiment(config: dict) -> None:
                         logger.warning(f"No test targets in split {split_id}. Skipping.")
                         continue
                         
-                    X_train, y_train = train_clean[features], train_clean[target_col].astype(int)
-                    X_test, y_test = test_clean[features], test_clean[target_col].astype(int)
+                    X_train, y_train = train_clean[features], train_clean[target_col].astype(int).reset_index(drop=True)
+                    X_test, y_test = test_clean[features], test_clean[target_col].astype(int).reset_index(drop=True)
                     
                     # Fit StandardScaler
                     scaler = StandardScaler()
