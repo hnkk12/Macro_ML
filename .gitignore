@@ -1,0 +1,24 @@
+# Generated outputs — không commit (dùng reports/ cho published results)
+outputs/
+data/raw/
+data/interim/
+data/processed/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+*.egg-info/
+
+# Environment
+.venv/
+venv/
+.env
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Audit logs (tạm thời)
+audit_*.txt

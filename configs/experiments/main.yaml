@@ -1,0 +1,71 @@
+experiment_name: main_3m6m12m
+seed: 42
+
+data:
+  start_date: "1980-01-01"
+  end_date: null
+  frequency: monthly
+  mode: revised
+  country: "US"  # parametric — sẵn sàng cho multi-country sau
+
+targets:
+  horizons: [3, 6, 12]
+
+validation:
+  initial_train_end: "2005-12-01"
+  test_start: "2006-01-01"
+  test_end: null
+  test_size_months: 12
+  gap_equals_horizon: true
+
+feature_sets:
+  - full
+  - core_econometric
+  - yield_only
+  - low_revision
+
+models:
+  - yield_only_logit       # baseline kinh tế lượng chuẩn
+  - core_logit             # probit/logit với core features
+  - logistic_l2            # ML baseline đơn giản
+  - random_forest
+  - xgboost
+  - lightgbm
+  - hybrid_ensemble        # C1 — main contribution
+
+metrics:
+  - roc_auc
+  - pr_auc
+  - brier                  # primary scoring metric
+  - log_loss
+  - ece
+  - f1
+
+thresholds:
+  fixed: [0.15, 0.25, 0.35]
+  descriptive_best_f1: true
+
+bootstrap:
+  enabled: true
+  block_size: 6
+  n_boot: 1000
+
+calibration:
+  main: "none"
+  robustness: "sigmoid"
+
+explainability:
+  shap_enabled: true
+  shap_model: "xgboost"    # model dùng cho SHAP
+  shap_horizon: 6          # horizon chính cho SHAP analysis
+  recession_episodes:
+    - {name: "2001", start: "2001-03-01", end: "2001-11-30"}
+    - {name: "2008", start: "2007-12-01", end: "2009-06-30"}
+    - {name: "2020", start: "2020-02-01", end: "2020-04-30"}
+
+outputs:
+  save_predictions: true
+  save_tables: true
+  save_figures: true
+  save_split_diagnostics: true
+  base_dir: "outputs/"

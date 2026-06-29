@@ -1,0 +1,43 @@
+feature_sets:
+  full:
+    - Payrolls_3mo_vs_12mo
+    - Real_Fed_Funds_Rate_12mo_chg
+    - CPI_3mo_pct_chg_annualized
+    - 10Y_Treasury_Rate_12mo_chg
+    - 3M_10Y_Treasury_Spread
+    - S&P_500_12mo_chg
+    - Payrolls_3mo_pct_chg_annualized
+    - Payrolls_12mo_pct_chg
+    - Unemployment_Rate
+    - Unemployment_Rate_12mo_chg
+    - Real_Fed_Funds_Rate
+    - CPI_12mo_pct_chg
+    - CPI_3mo_vs_12mo
+    - 3M_Treasury_Rate_12mo_chg
+    - 3M_10Y_Treasury_Spread_12mo_chg
+    - 5Y_10Y_Treasury_Spread
+    - S&P_500_3mo_chg
+    - S&P_500_3mo_vs_12mo
+    - IPI_3mo_pct_chg_annualized
+    - IPI_12mo_pct_chg
+    - IPI_3mo_vs_12mo
+    - T10Y2Y
+    - BAMLH0A0HYM2
+
+  core_econometric:
+    - T10Y3M
+    - T10Y2Y
+    - UNRATE_chg_12mo
+    - BAMLH0A0HYM2
+
+  yield_only:
+    - T10Y3M
+    - T10Y2Y
+
+  low_revision:
+    - T10Y3M
+    - T10Y2Y
+    - FEDFUNDS
+    - BAMLH0A0HYM2
+    - SP500_12mo_return
+    - SP500_drawdown_6mo

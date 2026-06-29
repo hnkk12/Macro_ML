@@ -1,0 +1,55 @@
+experiment_name: ablation_study
+seed: 42
+
+data:
+  start_date: "1980-01-01"
+  end_date: null
+  frequency: monthly
+  mode: revised
+  country: "US"
+
+targets:
+  horizons: [6]
+
+validation:
+  initial_train_end: "2005-12-01"
+  test_start: "2006-01-01"
+  test_end: null
+  test_size_months: 12
+  gap_equals_horizon: true
+
+feature_sets:
+  - full
+  - core_econometric
+  - yield_only
+  - low_revision
+
+models:
+  - hybrid_ensemble
+
+metrics:
+  - roc_auc
+  - pr_auc
+  - brier
+  - log_loss
+
+thresholds:
+  fixed: [0.25]
+  descriptive_best_f1: false
+
+bootstrap:
+  enabled: false
+
+calibration:
+  main: "none"
+  robustness: "none"
+
+explainability:
+  shap_enabled: false
+
+outputs:
+  save_predictions: true
+  save_tables: true
+  save_figures: false
+  save_split_diagnostics: false
+  base_dir: "outputs/"

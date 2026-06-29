@@ -1,0 +1,72 @@
+bootstrap:
+  block_size: 6
+  enabled: true
+  n_boot: 50
+calibration:
+  main: none
+  robustness: sigmoid
+data:
+  country: US
+  end_date: null
+  frequency: monthly
+  mode: revised
+  start_date: '1980-01-01'
+experiment_name: main_fast_sanity
+explainability:
+  recession_episodes:
+  - end: '2001-11-30'
+    name: '2001'
+    start: '2001-03-01'
+  - end: '2009-06-30'
+    name: '2008'
+    start: '2007-12-01'
+  - end: '2020-04-30'
+    name: '2020'
+    start: '2020-02-01'
+  shap_enabled: true
+  shap_horizon: 6
+  shap_model: xgboost
+feature_sets:
+- full
+- core_econometric
+- yield_only
+- low_revision
+metrics:
+- roc_auc
+- pr_auc
+- brier
+- log_loss
+- ece
+- f1
+models:
+- yield_only_logit
+- core_logit
+- logistic_l2
+- random_forest
+- xgboost
+- lightgbm
+- hybrid_ensemble
+outputs:
+  base_dir: outputs/
+  save_figures: false
+  save_predictions: true
+  save_split_diagnostics: true
+  save_tables: true
+seed: 42
+targets:
+  horizons:
+  - 3
+  - 6
+  - 12
+thresholds:
+  descriptive_best_f1: true
+  fixed:
+  - 0.15
+  - 0.25
+  - 0.35
+validation:
+  gap_equals_horizon: true
+  initial_train_end: '2005-12-01'
+  test_end: null
+  test_size_months: 48
+  test_start: '2006-01-01'
