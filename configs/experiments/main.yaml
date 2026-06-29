@@ -31,6 +31,8 @@ models:
   - random_forest
   - xgboost
   - lightgbm
+  - svm                    # baseline mạnh phi tuyến
+  - mlp                    # baseline neural network
   - hybrid_ensemble        # C1 — main contribution
 
 metrics:

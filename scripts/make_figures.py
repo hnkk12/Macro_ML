@@ -261,7 +261,102 @@ def main():
     coefs_path = os.path.join(base_dir, "explainability", "logistic_coefficients_h6.csv")
     plot_feature_stability(coefs_path, os.path.join(base_dir, "figures", "feature_stability.png"))
     
+    # 6. Meta Weights Dynamics
+    weights_path = os.path.join(base_dir, "tables", "table_meta_weights.csv")
+    plot_meta_weights_dynamics(weights_path, os.path.join(base_dir, "figures", "meta_weights_dynamics.png"))
+    
+    # 7. Robustness Gap Sensitivity
+    robustness_path = os.path.join(base_dir, "tables", "table_robustness_gap.csv")
+    plot_robustness_gap_sensitivity(robustness_path, os.path.join(base_dir, "figures", "robustness_gap_sensitivity.png"))
+    
     logger.info("Figures generated successfully!")
+
+def plot_meta_weights_dynamics(weights_path: str, output_path: str) -> None:
+    """Plot stacking meta-learner weights dynamics over time as a stacked area chart."""
+    if not os.path.exists(weights_path):
+        logger.warning(f"Meta weights file not found at {weights_path}, skipping dynamics figure.")
+        return
+        
+    df = pd.read_csv(weights_path)
+    # Filter for horizon 6 and full feature set
+    df_sub = df[(df['horizon'] == 6) & (df['feature_set'] == 'full')].copy()
+    if df_sub.empty:
+        df_sub = df.copy()
+        
+    if df_sub.empty or 'last_train_date' not in df_sub.columns:
+        return
+        
+    df_sub['last_train_date'] = pd.to_datetime(df_sub['last_train_date'])
+    df_sub = df_sub.sort_values('last_train_date')
+    
+    model_cols = ["probit", "logistic_l2", "random_forest", "xgboost", "lightgbm"]
+    model_cols = [c for c in model_cols if c in df_sub.columns]
+    if not model_cols:
+        return
+        
+    # Get absolute weights and normalize to sum to 1
+    abs_weights = df_sub[model_cols].abs()
+    row_sums = abs_weights.sum(axis=1)
+    # Avoid division by zero
+    row_sums = np.where(row_sums == 0, 1.0, row_sums)
+    normalized_weights = abs_weights.div(row_sums, axis=0)
+    
+    plt.figure(figsize=(12, 6))
+    
+    plt.stackplot(
+        df_sub['last_train_date'],
+        [normalized_weights[col] for col in model_cols],
+        labels=model_cols,
+        alpha=0.85
+    )
+    
+    plt.title("Meta-Learner Model Weight Dynamics Over Time (Horizon = 6m)", fontsize=14)
+    plt.xlabel("Training Window End Date", fontsize=12)
+    plt.ylabel("Relative Influence (Normalized Absolute Coefficient)", fontsize=12)
+    plt.legend(loc='lower left', bbox_to_anchor=(0.0, 1.02), ncol=len(model_cols))
+    plt.grid(True, linestyle='--', alpha=0.3)
+    plt.ylim(0, 1)
+    
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=300)
+    plt.close()
+    logger.info(f"Saved meta weights dynamics figure to {output_path}")
+
+def plot_robustness_gap_sensitivity(robustness_path: str, output_path: str) -> None:
+    """Plot model performance (ROC-AUC) sensitivity to temporal gap sizes."""
+    if not os.path.exists(robustness_path):
+        logger.warning(f"Robustness file not found at {robustness_path}, skipping sensitivity figure.")
+        return
+        
+    df = pd.read_csv(robustness_path)
+    if df.empty:
+        return
+        
+    plt.figure(figsize=(10, 6))
+    
+    sns.lineplot(
+        data=df,
+        x='gap_months',
+        y='roc_auc',
+        hue='model',
+        marker='o',
+        linewidth=2,
+        markersize=8
+    )
+    
+    plt.title("Robustness Analysis: Model Performance vs. Temporal Gap Size (Horizon = 6m)", fontsize=14)
+    plt.xlabel("Temporal Gap (Months)", fontsize=12)
+    plt.ylabel("Out-of-Sample ROC-AUC", fontsize=12)
+    plt.xticks([0, 3, 6, 12])
+    plt.grid(True, linestyle='--', alpha=0.5)
+    
+    plt.axvline(x=6, color='red', linestyle='--', alpha=0.7, label='True Forecast Horizon (Leakage-free Boundary)')
+    plt.legend(loc='lower left')
+    
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=300)
+    plt.close()
+    logger.info(f"Saved gap sensitivity figure to {output_path}")
 
 if __name__ == "__main__":
     main()

@@ -83,3 +83,13 @@ class HybridProbitMLEnsemble(BaseEstimator, ClassifierMixin):
             return get_xgboost(max_depth=2, n_estimators=50, random_state=self.random_state)
         elif name == "lightgbm":
             return get_lightgbm(max_depth=2, n_estimators=50, random_state=self.random_state)
+            
+    def get_meta_weights(self) -> dict:
+        """Return the weights assigned to each base model by the meta-learner."""
+        if not hasattr(self.meta_learner, "coef_"):
+            return {}
+        weights = self.meta_learner.coef_[0]
+        model_names = list(self.models.keys())
+        weights_dict = {model_names[i]: float(weights[i]) for i in range(len(model_names))}
+        weights_dict["intercept"] = float(self.meta_learner.intercept_[0])
+        return weights_dict

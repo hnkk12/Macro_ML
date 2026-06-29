@@ -16,11 +16,12 @@ class ExpandingWindowSplitter:
     with the test period.
     """
     def __init__(self, horizon: int, test_size_months: int, 
-                 initial_train_end: str, gap_equals_horizon: bool = True):
+                 initial_train_end: str, gap_equals_horizon: bool = True, gap_months: int = None):
         self.horizon = horizon
         self.test_size_months = test_size_months
         self.initial_train_end = pd.to_datetime(initial_train_end)
         self.gap_equals_horizon = gap_equals_horizon
+        self.gap_months = gap_months
         self.diagnostics: List[Dict[str, Any]] = []
         
     def split(self, df: pd.DataFrame) -> Iterator[Tuple[np.ndarray, np.ndarray]]:
@@ -49,8 +50,8 @@ class ExpandingWindowSplitter:
             if current_test_end > max_date:
                 current_test_end = max_date
                 
-            gap_months = self.horizon if self.gap_equals_horizon else 0
-            current_train_end = current_test_start - pd.DateOffset(months=gap_months)
+            gap_val = self.gap_months if self.gap_months is not None else (self.horizon if self.gap_equals_horizon else 0)
+            current_train_end = current_test_start - pd.DateOffset(months=gap_val)
             
             # Select indices based on sorted DataFrame
             train_mask = (dates >= min_date) & (dates <= current_train_end)

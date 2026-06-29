@@ -1,19 +1,20 @@
-# Research-Grade Recession Predictor Pipeline (v1.0.0)
+# Research-Grade Recession Predictor Pipeline (v2.0.0)
 ## Target: CORE Rank B Conference Submission (PAKDD / ECML-PKDD / SDM / CIKM)
 
-This repository contains a reproducible, leakage-free, and explainable Machine Learning pipeline for predicting macroeconomic recessions. The pipeline is designed to adhere to the rigorous standards of top-tier Data Mining and Machine Learning conferences.
+This repository contains a reproducible, leakage-free, and explainable Machine Learning pipeline for predicting macroeconomic recessions. The pipeline is designed to adhere to the rigorous standards of top-tier Data Mining and Machine Learning conferences, incorporating robust statistical tests and leakage-free validation frameworks.
 
 ---
 
 ## 1. Project Overview & Main Contributions
 
-Traditional recession forecasting literature often relies on single economic models or suffers from subtle temporal data leakage. We address these drawbacks by introducing a research-ready pipeline with three main contributions:
+Traditional recession forecasting literature often relies on single economic models or suffers from subtle temporal data leakage. We address these drawbacks by introducing a research-ready pipeline with four main contributions:
 
-*   **C1 — Hybrid Stacking Ensemble Framework**: We combine traditional Probit econometric models (as interpretable priors) with flexible machine learning models (Logistic Regression L2, Random Forest, XGBoost, and LightGBM) via a stacked meta-learner. This bridges the gap between statistical rigor and machine learning flexibility.
-*   **C2 — Leakage-free Expanding-Window Validation with Temporal Gap**: Many past studies suffer from data leakage when using forward-looking labels. Our splitter enforces a strict temporal gap equal to the forecast horizon $h$:
+*   **C1 — Hybrid Econometric-Machine Learning Stacking (HEML)**: We combine traditional Probit econometric models (providing structured parametric priors) with flexible machine learning models (Logistic Regression L2, Support Vector Machines (SVM), Multi-Layer Perceptrons (MLP), Random Forest, XGBoost, and LightGBM) via a stacked meta-learner. This bridges the gap between statistical rigor and machine learning flexibility.
+*   **C2 — Leakage-free Expanding-Window Validation with Temporal Gap**: Many past studies suffer from data leakage when using forward-looking targets. Our splitter enforces a strict temporal gap equal to the forecast horizon $h$:
     $$\max(\text{train\_date}) \le \min(\text{test\_date}) - h$$
-    This ensures that target windows of the training set do not overlap with the test period.
-*   **C3 — SHAP-based Economic Interpretation by Recession Regime**: Instead of reporting global feature importances, we attribute risk factors locally to specific historical episodes (the 2001 Dot-com bubble, the 2008 Financial Crisis, and the 2020 Covid-19 pandemic) using SHAP values. This reveals that the driving factors vary across economic regimes.
+    This ensures that target windows of the training set do not overlap with the test period, eliminating optimistic bias.
+*   **C3 — Regime-Specific Economic Interpretation**: Instead of reporting static global feature importances, we attribute risk factors locally to specific historical episodes (the 2001 Dot-com bubble, the 2008 Financial Crisis, and the 2020 Covid-19 pandemic) using SHAP values. This reveals that the driving factors vary dynamically across economic regimes.
+*   **C4 — Pairwise Forecast Significance Testing (Diebold-Mariano) & Temporal Gap Sensitivity Analysis**: We implement a rigorous statistical validation framework. Using the Diebold-Mariano test, we verify whether our HEML framework significantly outperforms standard econometrics and ML baselines under temporal autocorrelation. Furthermore, we conduct a sensitivity analysis on temporal gap lengths to quantitatively demonstrate the impact of information leakage on predictive performance.
 
 ---
 
@@ -71,26 +72,25 @@ pip install -r requirements.txt
 ```
 
 ### Step 2: Run Pipeline
-You can run the entire pipeline (downloading, building dataset, running validation, and creating tables & figures) via the provided Makefile:
-```bash
-make all
-```
+You can execute the entire pipeline (downloading, building dataset, running validation, running robustness analysis, and creating tables & figures) sequentially:
 
-Or run individual commands:
 ```bash
-# Download raw datasets
+# 1. Download raw datasets
 python scripts/download_data.py --config configs/experiments/main.yaml
 
-# Preprocess and compile panel data
+# 2. Preprocess and compile panel data
 python scripts/build_dataset.py --config configs/experiments/main.yaml
 
-# Run validation loop and model training
+# 3. Run primary out-of-sample experiments (model training & tuning)
 python scripts/run_experiment.py --config configs/experiments/main.yaml
 
-# Generate tables (CSV)
+# 4. Run robustness gap sensitivity analysis (C4)
+python scripts/run_robustness_gap.py
+
+# 5. Generate tables (CSV outputs including DM test & robustness results)
 python scripts/make_tables.py --config configs/experiments/main.yaml
 
-# Generate figures (PNG)
+# 6. Generate figures (PNG plots including weights dynamics & gap sensitivity)
 python scripts/make_figures.py --config configs/experiments/main.yaml
 ```
 
@@ -103,18 +103,23 @@ All generated tables, predictions, and charts are stored in the `outputs/` folde
 *   `outputs/predictions/`
     *   `oos_predictions_h3.csv`, `oos_predictions_h6.csv`, `oos_predictions_h12.csv`: Out-of-sample predictions.
 *   `outputs/tables/`
-    *   `table_main_metrics.csv`: ROC-AUC, PR-AUC, Brier score, ECE across models and horizons.
+    *   `table_main_metrics.csv`: ROC-AUC, PR-AUC, Brier score, ECE, Log-loss across models and horizons.
     *   `table_ablation.csv`: Performance comparison across feature sets (ablation study).
     *   `table_bootstrap_ci.csv`: Block bootstrap confidence intervals.
     *   `table_lead_time.csv`: Detection lead times per recession episode.
     *   `table_threshold_sensitivity.csv`: F1 score sensitivity to probability thresholds.
     *   `table_calibration.csv`: Expected Calibration Error comparisons.
+    *   `table_significance_dm.csv`: Diebold-Mariano pairwise significance test results (C4).
+    *   `table_robustness_gap.csv`: Temporal gap sensitivity analysis table (C4).
+    *   `table_meta_weights.csv`: Meta-learner stacking weights dynamics (ablation).
 *   `outputs/figures/`
     *   `probability_paths.png`: OOS probability paths versus NBER gray shading.
     *   `calibration_curves.png`: Reliability diagram for probabilitic calibration.
     *   `pr_curves.png`: Precision-Recall curves.
     *   `shap_by_episode.png`: Episode-specific mean absolute SHAP values (C3).
     *   `feature_stability.png`: Stability of standardized coefficients across split iterations.
+    *   `meta_weights_dynamics.png`: Stacked area chart showing how model weights adapt dynamically across splits.
+    *   `robustness_gap_sensitivity.png`: Performance decay curves showing the impact of temporal gap sizes.
 
 ---
 
@@ -124,12 +129,13 @@ All random seeds are fixed globally via config (`seed: 42`).
 
 Run unit tests to verify target construction, temporal gap isolation, and scaling hygiene:
 ```bash
-make test
+python -m pytest tests/ -v --tb=short
 ```
 
 ---
 
-## 7. Known Limitations
-1. **US-Only Data**: In this phase, evaluation is limited to US macroeconomic indicators. Extending to G7 or OECD countries would improve generalization claims.
-2. **Monthly Frequency**: The panel is built at a monthly frequency. Real-time implementation is subject to publication lag.
-3. **No Real-Time Vintage Data**: We use revised data, which may differ from the real-time data available at the forecast origin (vintage data).
+## 7. Robustness & Open Research Directions
+
+1.  **US-Centric Evaluation**: In this phase, evaluation is limited to US macroeconomic indicators. Extending to G7 or OECD countries would improve generalization claims (parametric support is ready via `configs/experiments/main.yaml`).
+2.  **Publication Lag**: The panel is built at a monthly frequency. Real-time implementation is subject to publication lag, which is partially mitigated by our `low_revision` feature set ablation.
+3.  **Real-Time Vintage Data**: We use revised data. Future research could incorporate real-time vintage data to test performance under true historical information sets.

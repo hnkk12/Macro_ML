@@ -60,6 +60,21 @@ def get_base_model(model_name: str, params: dict = None, random_state: int = 42)
         n_estimators = params.get("n_estimators", 100)
         return get_lightgbm(max_depth=max_depth, num_leaves=num_leaves, reg_lambda=reg_lambda, 
                             learning_rate=learning_rate, n_estimators=n_estimators, random_state=random_state)
+    elif model_name == "svm":
+        C = params.get("C", 1.0)
+        kernel = params.get("kernel", "rbf")
+        from src.models.appendix_models import get_svm
+        return get_svm(C=C, kernel=kernel, random_state=random_state)
+    elif model_name == "mlp":
+        hidden_layer_sizes = params.get("hidden_layer_sizes", (64, 32))
+        if isinstance(hidden_layer_sizes, list):
+            hidden_layer_sizes = tuple(hidden_layer_sizes)
+        alpha = params.get("alpha", 0.0001)
+        learning_rate_init = params.get("learning_rate_init", 0.01)
+        from sklearn.neural_network import MLPClassifier
+        return MLPClassifier(hidden_layer_sizes=hidden_layer_sizes, alpha=alpha,
+                             learning_rate_init=learning_rate_init, max_iter=1000,
+                             random_state=random_state)
     elif model_name == "hybrid_ensemble":
         # Stacking model
         return HybridProbitMLEnsemble(random_state=random_state)
@@ -196,6 +211,7 @@ def run_experiment(config: dict) -> None:
     coef_list = []
     shap_list = []
     hyperparams_list = []
+    meta_weights_records = []
     
     # Main outer loop
     for horizon in horizons:
@@ -308,6 +324,17 @@ def run_experiment(config: dict) -> None:
                         kf = KFold(n_splits=5, shuffle=False)
                         inner_splits = list(kf.split(X_train_scaled))
                         model.fit(X_train_scaled, y_train, inner_cv_splits=inner_splits)
+                        
+                        # Save meta weights dynamics
+                        if hasattr(model, "get_meta_weights"):
+                            w_dict = model.get_meta_weights()
+                            if w_dict:
+                                last_train_date = train_clean['DATE'].iloc[-1].strftime("%Y-%m-%d")
+                                w_dict["horizon"] = horizon
+                                w_dict["feature_set"] = f_set_name
+                                w_dict["split_id"] = split_id
+                                w_dict["last_train_date"] = last_train_date
+                                meta_weights_records.append(w_dict)
                     else:
                         model.fit(X_train_scaled, y_train)
                         
@@ -411,6 +438,14 @@ def run_experiment(config: dict) -> None:
         hp_path = os.path.join(base_dir, "tuning", "best_hyperparameters.csv")
         os.makedirs(os.path.dirname(hp_path), exist_ok=True)
         hyperparams_df.to_csv(hp_path, index=False)
+        
+    # Save meta weights dynamics
+    if meta_weights_records:
+        meta_weights_df = pd.DataFrame(meta_weights_records)
+        mw_path = os.path.join(base_dir, "tables", "table_meta_weights.csv")
+        os.makedirs(os.path.dirname(mw_path), exist_ok=True)
+        meta_weights_df.to_csv(mw_path, index=False)
+        logger.info(f"Saved meta-learner weights to {mw_path}")
         
     logger.info("Out-of-sample experiments completed successfully!")
 

@@ -8,6 +8,7 @@ data:
 
 experiment:
 	python scripts/run_experiment.py --config configs/experiments/main.yaml
+	python scripts/run_robustness_gap.py
 
 tables:
 	python scripts/make_tables.py --config configs/experiments/main.yaml

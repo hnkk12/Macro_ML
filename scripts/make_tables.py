@@ -200,6 +200,61 @@ def main():
         cal_df = main_metrics_df[cal_cols].copy()
         cal_df.to_csv(os.path.join(base_dir, "tables", "table_calibration.csv"), index=False)
         
+    # --- 6.5. Table: Diebold-Mariano Significance Test ---
+    logger.info("Generating Diebold-Mariano Significance Test Table...")
+    from src.evaluation.significance import diebold_mariano_test
+    dm_rows = []
+    
+    # We compare hybrid_ensemble on 'full' features against all other models
+    ref_model = "hybrid_ensemble"
+    ref_feat_set = "full"
+    
+    for h, df_h in preds_by_h.items():
+        # Extract predictions for the reference model
+        ref_pred_df = df_h[(df_h['model'] == ref_model) & (df_h['feature_set'] == ref_feat_set)].copy()
+        if ref_pred_df.empty:
+            continue
+            
+        # Group by feature_set and model
+        for (feat_set, model), grp in df_h.groupby(['feature_set', 'model']):
+            # Skip comparing the reference model to itself
+            if model == ref_model and feat_set == ref_feat_set:
+                continue
+                
+            # Align prediction series chronologically by forecast_origin
+            merged = pd.merge(
+                grp[['forecast_origin', 'y_true', 'y_prob']],
+                ref_pred_df[['forecast_origin', 'y_prob']],
+                on='forecast_origin',
+                suffixes=('_model', '_ref')
+            )
+            
+            if len(merged) < 10:
+                continue
+                
+            dm_result = diebold_mariano_test(
+                y_true=merged['y_true'].values,
+                y_prob1=merged['y_prob_model'].values,
+                y_prob2=merged['y_prob_ref'].values,
+                horizon=h
+            )
+            
+            dm_rows.append({
+                "horizon": h,
+                "baseline_feature_set": feat_set,
+                "baseline_model": model,
+                "ref_model": f"{ref_model} ({ref_feat_set})",
+                "dm_stat": round(dm_result["dm_stat"], 4) if not np.isnan(dm_result["dm_stat"]) else np.nan,
+                "p_value_two_sided": round(dm_result["p_value"], 4) if not np.isnan(dm_result["p_value"]) else np.nan,
+                "p_value_one_sided_better": round(dm_result["p_value_one_sided"], 4) if not np.isnan(dm_result["p_value_one_sided"]) else np.nan,
+                "mean_brier_diff": round(dm_result["mean_diff"], 6) if not np.isnan(dm_result["mean_diff"]) else np.nan
+            })
+            
+    if dm_rows:
+        dm_df = pd.DataFrame(dm_rows)
+        dm_df.to_csv(os.path.join(base_dir, "tables", "table_significance_dm.csv"), index=False)
+        logger.info("Saved Diebold-Mariano test results to outputs/tables/table_significance_dm.csv")
+        
     # --- 7. Table: Hyperparameters ---
     logger.info("Loading Hyperparameters Table...")
     hp_path_src = os.path.join(base_dir, "tuning", "best_hyperparameters.csv")
